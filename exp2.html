@@ -1,0 +1,288 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>共用x轴,支持自适应及打印导出</title>
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap@4.0.0/dist/css/bootstrap.css"/>
+    <script src="https://unpkg.com/jquery@3.3.1/dist/jquery.js"></script>
+    <script src="https://unpkg.com/bootstrap@4.0.0/dist/js/bootstrap.js"></script>
+    <script src="https://unpkg.com/highcharts@4.2.6/highcharts.js"></script>
+    <script src="https://unpkg.com/highcharts@4.2.6/modules/exporting.js"></script>
+    <script src="https://unpkg.com/highcharts@6.0.7/themes/grid-light.js"></script>
+    <style>
+        .chart1, .chart2 {
+            /*width: 517px;*/
+        }
+
+        .hide {
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="chart1"></div>
+            <div class="chart2 hide"></div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    Highcharts.setOptions({
+        credits: {
+            enabled: false,
+        },
+        exporting: {
+            enabled: false
+        },
+        lang: {
+            printChart: "打印图表",
+            downloadJPEG: "下载JPEG 图片",
+            downloadPDF: "下载PDF文档",
+            downloadPNG: "下载PNG图片",
+            downloadSVG: "下载SVG矢量图"
+        }
+    });
+
+    Highcharts.getChart = function (div) {
+        var index = $(div).data('highchartsChart');
+        var result = $.map(Highcharts.charts, function (chart) {
+            if (chart && chart.index === index) {
+                return chart
+            }
+        });
+        return result && result.length > 0 ? result[0] : undefined;
+    };
+
+    var categories = ["石家庄市", "唐山市", "秦皇岛市", "邯郸市", "邢台市", "保定市", "张家口市", "承德市", "沧州市", "廊坊市", "衡水市"];
+    var ordinary = [1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0];
+    var handle = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var wait = [2, 3, 0, 2, 4, 1, 1, 1, 1, 1, 2];
+    var execution = [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+
+
+    var initAddChart = function (callback) {
+        var $chart2 = $('.chart2');
+        $chart2.removeClass('hide');
+        $chart2.highcharts({
+            chart: {
+                type: 'column',
+                width: 600,     //导出宽度设置,默认600
+                height: 400,     //两者高度
+                marginTop: 220     //上图表高度
+            },
+            title: {
+                text: ''
+            },
+            xAxis: {
+                categories: categories,
+                tickLength: 0,
+                labels: {
+                    enabled: false      //隐藏X轴标签
+                },
+                gridLineWidth: 0
+            },
+            yAxis: {
+                min: 0,
+                minorTickInterval: 10,
+                allowDecimals: false,
+                reversed: true,  //反转Y轴
+                title: {
+                    text: ''
+                },
+                stackLabels: {
+                    enabled: true,
+                    style: {
+                        fontWeight: 'bold',
+                        color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
+                    }
+                }
+            },
+            legend: {
+                align: 'left',
+                x: 0,
+                verticalAlign: 'bottom',
+                y: 0
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.x + '</b><br/>' +
+                        this.series.name + '的人员: ' + this.y + '<br/>' +
+                        '运维人员总数: ' + this.point.stackTotal;
+                }
+            },
+            plotOptions: {
+                column: {
+                    stacking: 'normal',
+                    dataLabels: {
+                        formatter: function () {
+                            return this.y === 0 ? '' : this.y;
+                        },
+                        enabled: true,
+                        color: (Highcharts.theme && Highcharts.theme.dataLabelsColor) || 'white',
+                        style: {
+                            textShadow: '0 0 9px black'
+                        }
+                    }
+                }
+            },
+            series: [{
+                maxPointWidth: 20,
+                name: '任务状态',
+                color: '#ff0000',
+                data: execution
+            }, {
+                maxPointWidth: 20,
+                name: '待命状态',
+                color: '#00b0f0',
+                data: wait
+            }]
+        }, function (c) {
+            if (callback) callback(c);
+            var $chart2 = $('.chart2');
+            $chart2.addClass('hide');
+        });
+    };
+    initAddChart(function (chart2) {
+        var $chart1 = $('.chart1');
+        $chart1.highcharts({
+            chart: {
+                type: 'column',
+                height: 400,
+                marginBottom: 230,
+                events: {
+                    beforePrint: function (e) {
+                        var chart1 = e.target;
+                        var printMaxWidth = chart1.options.exporting.printMaxWidth;
+                        // Handle printMaxWidth
+                        var handleMaxWidth = printMaxWidth && chart1.chartWidth > printMaxWidth;
+                        var $chart1 = $(chart1.container);
+                        var $chart2 = $('.chart2');
+
+                        var chart2 = Highcharts.getChart($chart2);
+                        if (handleMaxWidth) {
+                            $chart2.removeClass('hide');
+                            chart2.setSize(printMaxWidth, undefined, false);
+                            $chart2.addClass('hide');
+                            $chart1.find('.add-chart').remove();
+                            $chart2.find('svg > *').addClass('add-chart').appendTo($chart1.find('svg'));
+                        }
+                    },
+                    afterPrint: function (e) {
+                        var chart = e.target;
+                        $(window).trigger('resize');
+                    }
+                }
+            },
+            title: {
+                text: ''
+            },
+            xAxis: {
+                categories: categories,
+                gridLineWidth: 0,
+                tickInterval: 1,
+                labels: {
+                    style: {
+                        fontSize: '11px'
+                    }
+                }
+            },
+            yAxis: {
+                min: 0,
+                minorTickInterval: 10,
+                allowDecimals: false,
+                title: {
+                    text: ''
+                },
+                stackLabels: {
+                    enabled: true,
+                    style: {
+                        fontWeight: 'bold',
+                        color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
+                    }
+                }
+            },
+            legend: {
+                align: 'left',
+                x: 0,
+                verticalAlign: 'top',
+                y: 0
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.x + '</b><br/>' +
+                        this.series.name + '任务: ' + this.y + '<br/>' +
+                        '维修任务总量: ' + this.point.stackTotal;
+                }
+            },
+            plotOptions: {
+                column: {
+                    stacking: 'normal',
+                    dataLabels: {
+                        formatter: function () {
+                            return this.y === 0 ? '' : this.y;
+                        },
+                        enabled: true,
+                        color: (Highcharts.theme && Highcharts.theme.dataLabelsColor) || 'white',
+                        style: {
+                            textShadow: '0 0 9px black'
+                        }
+                    }
+                }
+            },
+            series: [
+                // {
+                //     maxPointWidth: 20,
+                //     name: '待紧急维修',
+                //     color: '#ff0000',
+                //     data: urgent
+                // },
+                {
+                    maxPointWidth: 20,
+                    name: '待维修',
+                    color: '#ffc000',
+                    data: ordinary
+                },
+                {
+                    maxPointWidth: 20,
+                    name: '维修中',
+                    color: '#ff0000',
+                    data: handle
+                }],
+            exporting: {
+                enabled: true,
+            },
+        }, function (chart1) {
+            var $chart1 = $(chart1.container);
+            var $chart2 = $('.chart2');
+            var $panel = $chart2.parent();
+            chart2.setSize(($panel.width()), undefined, false);
+            $chart2.find('svg > *').addClass('add-chart').appendTo($chart1.find('svg'));
+            $chart2.replaceWith('<div class="chart2 hide"></div>');
+            initAddChart();
+        });
+    });
+
+    var resizeTimeout = 0;
+
+    $(window).on('resize', function () {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function () {
+            var $chart1 = $('.chart1');
+            var $chart2 = $('.chart2');
+            var $panel = $chart2.parent();
+            var chart2 = Highcharts.getChart($chart2);
+            $chart2.removeClass('hide');
+            chart2.setSize(($panel.width()), undefined, false);
+            $chart2.addClass('hide');
+            $chart1.find('.add-chart').remove();
+            $chart2.find('svg > *').addClass('add-chart').appendTo($chart1.find('svg'));
+            $chart2.replaceWith('<div class="chart2 hide"></div>');
+            initAddChart();
+        }, 100);
+
+    })
+</script>
+</html>

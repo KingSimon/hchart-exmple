@@ -1,0 +1,105 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>饼图中心添加内容</title>
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap@4.0.0/dist/css/bootstrap.css"/>
+    <script src="https://unpkg.com/jquery@3.3.1/dist/jquery.js"></script>
+    <script src="https://unpkg.com/bootstrap@4.0.0/dist/js/bootstrap.js"></script>
+    <script src="https://unpkg.com/highcharts@4.2.6/highcharts.js"></script>
+    <script src="https://unpkg.com/highcharts@4.2.6/modules/exporting.js"></script>
+    <script src="https://unpkg.com/highcharts@6.0.7/themes/grid-light.js"></script>
+    <style>
+        .chart {
+            /*width: 517px;*/
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="chart"></div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    Highcharts.setOptions({
+        credits: {
+            enabled: false,
+        },
+        exporting: {
+            enabled: false
+        },
+        lang: {
+            printChart: "打印图表",
+            downloadJPEG: "下载JPEG 图片",
+            downloadPDF: "下载PDF文档",
+            downloadPNG: "下载PNG图片",
+            downloadSVG: "下载SVG矢量图"
+        }
+    });
+
+
+    var pieArray = [{name: '正常站点', y: 10}, {name: '故障站点', y: 20}];
+    var pieAll = 30;
+    $('.chart').highcharts({
+        chart: {
+            plotBackgroundColor: null,
+            plotBorderWidth: null,
+            plotShadow: false,
+            height: 120,
+            type: 'pie'
+        },
+        title: {
+            floating: true,
+            text: '圆心显示的标题',
+            style: {
+                fontSize: 12,
+                lineHeight: 12
+            }
+        },
+        tooltip: {
+            pointFormat: '<b>{point.y}</b><br>( {point.percentage:.1f}% )',
+        },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                verticalAlign: 'middle',
+                overflow: true,
+                crop: false,
+                dataLabels: {
+                    enabled: true,
+                    distance: 18,
+                    format: '{point.name}: {point.y}',
+                    style: {
+                        color: 'black',
+                        fontSize: 12
+                    }
+                }
+            }
+        },
+        series: [{
+            type: 'pie',
+            name: 'series',
+            colorByPoint: true,
+            size: 80,
+            innerSize: '80%',
+            data: pieArray
+        }]
+    }, function (c) {
+        // 环形图圆心
+        var centerX = c.series[0].center[0];
+        var centerY = c.series[0].center[1];
+        var text = '站点总数<br/>' + pieAll + '个';
+        // 标题字体大小，返回类似 16px ，所以需要 parseInt 处理
+        var titleHeight = parseInt(c.title.styles.fontSize);
+
+        c.setTitle({
+            text: text,
+            y: centerY + titleHeight / 2 - 10
+        });
+    });
+</script>
+</html>
